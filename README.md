@@ -189,7 +189,3 @@ A: 不需要。只要你能在浏览器里登录 M365 Copilot，就能用。
 本项目是 **非官方工具**，与微软无关。通过协议兼容的方式对接 M365 Copilot Chat 的消费者网页端点。请遵守你所在公司的可接受使用政策（Acceptable Use Policy）。
 
 详见 [DISCLAIMER](DISCLAIMER.md) 和 [MIT 许可证](LICENSE)。
-
----
-
-**如果觉得有用，点个 ⭐ 吧！** 你的 Star 是对开发者最大的鼓励。
