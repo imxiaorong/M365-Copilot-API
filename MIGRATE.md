@@ -14,6 +14,7 @@ cd M365-Copilot-API
 - Playwright Chromium download (~170 MB, one-time)
 - Symlinking `bin/copilot` into `~/.local/bin/copilot` so `copilot` works
   globally
+- cc-switch provider registration (if cc-switch is installed)
 
 ## 2. First-time sign-in
 
@@ -26,10 +27,10 @@ message (e.g. `hi`) in the chat — the Sydney access token is captured off
 the WebSocket URL and saved to `session/token.json`. No terminal Enter
 needed; capture is automatic.
 
-## 3. Everyday use
+## 3. Everything use
 
 ```bash
-copilot                    # interactive REPL, default GPT-5.6 Thinker
+copilot                    # interactive REPL
 copilot ask "..."          # one-shot question
 copilot login              # re-run sign-in when the token/refresh expires
 ```
@@ -40,27 +41,19 @@ copilot login              # re-run sign-in when the token/refresh expires
 python app.py              # http://127.0.0.1:8000
 ```
 
-Endpoints:
+## 5. Codex CLI integration
 
-- `POST /v1/chat/completions` — supports `stream: true` and a custom
-  `conversation_id` pass-through
-- `GET  /v1/models` — advertises the tone-tagged model variants
+### Via cc-switch (recommended)
 
-Model names → Copilot backend `tone`:
+If cc-switch is installed, the `install.sh` script automatically registers a
+"M365 Copilot" provider. Just open cc-switch → Codex → select "M365 Copilot"
+as the active provider.
 
-| Model name | tone | Notes |
-| --- | --- | --- |
-| `m365-copilot` | `Gpt_5_6_Reasoning` | Default — Thinker |
-| `m365-copilot-thinker` | `Gpt_5_6_Reasoning` | explicit Thinker |
-| `m365-copilot-fast` | `Magic` | Non-thinker, faster |
-| `m365-copilot-creative` | `Creative` | Legacy Bing tone |
-| `m365-copilot-precise` | `Precise` | Legacy Bing tone |
-| `m365-copilot-balanced` | `Balanced` | Legacy Bing tone |
+### Or manual config
 
-## 5. Codex CLI integration (optional)
-
-Append to `~/.codex/config.toml` (do NOT touch the top-level `model` or
-`model_provider` — those belong to Codex Desktop):
+For Codex CLI without cc-switch, append to `~/.codex/config.toml` (do NOT
+touch the top-level `model` or `model_provider` — those belong to Codex
+Desktop):
 
 ```toml
 [profiles.m365]
@@ -70,7 +63,7 @@ model_provider = "m365"
 [model_providers.m365]
 name = "M365 Copilot"
 base_url = "http://localhost:8000/v1"
-wire_api = "chat"
+wire_api = "responses"
 env_key = "M365_KEY"
 ```
 

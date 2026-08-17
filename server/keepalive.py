@@ -2,7 +2,7 @@
 
 Sydney tokens live ~60-75 minutes. This task refreshes them headlessly every
 40 minutes using the visible-but-hidden Playwright strategy (window 1x1,
-positioned off-screen) so McDonald's Entra conditional-access allows the
+positioned off-screen) so the organisation's Entra conditional-access allows the
 silent SO to complete. The user sees no window.
 
 The refresh shares the same ``_get_upstream_lock()`` as the request handlers
@@ -20,7 +20,7 @@ from typing import Optional
 
 
 REFRESH_INTERVAL_SECONDS = 55 * 60      # 55 min tick — reduced from 40min
-                                         # to avoid hitting Entra CA policy
+                                         # to avoid hitting CA policy
                                          # (SMS MFA) on every refresh.
 REFRESH_AGE_THRESHOLD = 50 * 60         # refresh when token is >= 50 min old
 

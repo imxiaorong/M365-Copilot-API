@@ -345,7 +345,7 @@ class BrowserAuth:
             hydration.
           * MSAL localStorage — read after the SPA has had time to hydrate.
 
-        Why visible-but-hidden rather than headless? McDonald's Entra
+        Why visible-but-hidden rather than headless? Some corporate Entra
         conditional-access policy rejects silent sign-on from Playwright's
         headless Chromium (the UA / sec-chua header signature differs from a
         normal user browser). When ``hidden=True`` we launch a real window

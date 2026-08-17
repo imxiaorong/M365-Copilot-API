@@ -18,4 +18,4 @@ RATE_LIMIT_BURST = int(os.environ.get("RATE_LIMIT_BURST", "5"))
 # The id matches what /v1/models announces (see api.CANONICAL_MODEL_NAME) so
 # OpenAI-compatible clients see one consistent name across listing +
 # response payloads.
-MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-5.6-sol")
+MODEL_NAME = os.environ.get("MODEL_NAME", "m365-copilot")
