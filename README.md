@@ -1,151 +1,156 @@
 # M365-Copilot-API
 
-[中文版](README.zh-CN.md)
+> 我有 M365 账号，可以用 Copilot Chat 的 GPT-5.6-deepthink 模型。
+> 但我更希望用 Codex CLI 这类 Agent 产品来充分发挥它的能力——所以有了这个项目。
 
-Local OpenAI / Responses API-compatible server for **Microsoft 365 Copilot Chat**
-(work/school account). Talks to the consumer web endpoint under
-`m365.cloud.microsoft/chat` — no application registration, no admin consent,
-no Graph API. You sign in once in a browser; the Sydney chat token is refreshed
-silently after that.
+[English](README.en.md)
 
-> **Unofficial.** Automates a first-party web experience for personal use. Not
-> affiliated with or endorsed by Microsoft. Use responsibly and inside your
-> organisation's acceptable-use policy. See [DISCLAIMER](DISCLAIMER.md).
+## 故事
 
-## Features
+我是 M365 用户，日常用 Copilot Chat 写代码、做分析。GPT-5.6-deepthink 的推理能力很强，但网页版 Copilot 的交互方式限制了它的发挥：
 
-- **Drop-in OpenAI-compatible server** — works with Codex CLI, Claude Code,
-  `openai` Python SDK, and any standard OpenAI-compatible client
-- **Responses API** native — speaks the `wire_api = "responses"` protocol
-  that Codex CLI v0.144+ requires
-- **Streaming** — full SSE streaming support for both Chat Completions and
-  Responses endpoints
-- **Silent token refresh** — keeps the Sydney access token fresh without
-  popping browser windows
-- **cc-switch integration** — one-click provider setup via the install script
+- 不能集成到我的编辑器里
+- 不能做批量处理
+- 不能和 CI/CD 流程联动
+- 没有 Agent 能力（思考、规划、执行）
 
-## Two ways to use it
+我真正想要的是：**用 Codex CLI 这类 Agent 产品来调用 M365 的模型能力**。但官方没有给 API，怎么办？
 
-**As a Python library**:
+于是有了这个项目——它把 M365 Copilot Chat 背后的 WebSocket 协议转成了标准的 OpenAI API。你在浏览器里能做的事情，现在通过 API 也能做，而且可以用你喜欢的 Agent 工具。
 
-```python
-from m365copilot import M365CopilotClient
-
-client = M365CopilotClient()
-reply = client.chat("Say hello.")
-print(reply.text, reply.conversation_id)
-
-reply2 = client.chat("And in French?", reply.conversation_id)   # continue
-for chunk in client.stream("Tell me a joke"):
-    print(chunk, end="", flush=True)
+```
+你的 Agent 工具 → OpenAI SDK → localhost:8000 → M365 Copilot 云端
 ```
 
-**As a local OpenAI-compatible server** (drop-in for the `openai` SDK):
+## 场景
 
-```bash
-python app.py                    # http://127.0.0.1:8000
-```
+**如果你和我一样：**
+- 公司有 M365 E3/E5 账号，能用 Copilot Chat
+- 觉得网页版 Copilot 交互不够灵活
+- 想用 Codex CLI、OpenAI SDK 或其他 Agent 工具来调用模型
+- 不想为了一个 API 去申请 Azure 资源、走审批流程
+
+那这个项目就是为你准备的。
+
+## 能力
+
+### 🔌 OpenAI 兼容接口
+标准的 Chat Completions + Responses API，支持流式输出。任何 OpenAI 兼容客户端直接连。
 
 ```python
 from openai import OpenAI
 client = OpenAI(base_url="http://localhost:8000/v1", api_key="unused")
+
 resp = client.chat.completions.create(
     model="m365-copilot",
-    messages=[{"role": "user", "content": "Hello!"}],
+    messages=[{"role": "user", "content": "用 Python 写一个快排"}],
 )
 print(resp.choices[0].message.content)
 ```
 
-## Quick start
+### 🧩 Codex CLI 原生支持
+原生支持 Responses API 的全部 SSE 事件流，Codex CLI 切换 `wire_api = "responses"` 后无需任何额外代理。
+
+### 🔄 自动续期
+M365 的 token 有效期 60-75 分钟，项目内置了自动刷新机制，登录一次持续使用，无需反复操作。
+
+### 🎯 多 tone 选择
+支持 Thinker、Fast、Creative、Precise、Balanced 等多种 Copilot 模式，按需切换。
+
+## 快速开始
+
+```bash
+git clone https://github.com/imxiaorong/M365-Copilot-API.git
+cd M365-Copilot-API
+./install.sh
+
+# 首次登录（会弹浏览器，用你的 M365 账号登录）
+copilot login
+
+# 启动服务
+python app.py
+```
+
+服务启动后，所有 OpenAI 兼容客户端连 `http://localhost:8000/v1` 即可使用。
+
+## 模型名对照
+
+| 请求用的 model 名 | Copilot 后端 tone | 说明 |
+|---|---|---|
+| `m365-copilot` | `Gpt_5_6_Reasoning` | 默认，Thinker |
+| `m365-copilot-thinker` | `Gpt_5_6_Reasoning` | 显式 Thinker |
+| `m365-copilot-fast` | `Magic` | 快速模式，非推理 |
+| `m365-copilot-creative` | `Creative` | 创意模式 |
+| `m365-copilot-precise` | `Precise` | 严谨模式 |
+| `m365-copilot-balanced` | `Balanced` | 平衡模式 |
+
+## 项目结构
+
+```
+m365copilot/        ← 核心库
+├── auth.py          token 缓存 / 过期检查
+├── browser.py       Playwright 登录 + 抓 token
+├── protocol.py      SignalR 协议帧构造
+├── driver.py        WebSocket Chathub 驱动
+├── silent_refresh.py  Entra 刷新令牌交换（无浏览器）
+└── client.py        高层 API（chat/stream/对话续接）
+
+server/             ← FastAPI 服务
+├── api.py            OpenAI 兼容接口（Chat Completions + Responses）
+├── prompt.py         消息转 Copilot 提示词
+├── responses_format.py  Responses API 适配
+├── schemas.py        Pydantic 请求模型
+├── keepalive.py      后台 token 刷新器
+└── config.py         环境变量配置
+
+tools/              ← 调试工具
+├── capture_m365.py     协议抓包
+├── diag_headless.py    诊断 token 捕获问题
+└── inspect_tokens.py   查看 MSAL token 缓存
+```
+
+## 和类似方案的关系
+
+这个项目最初基于 [Windows-Copilot-API](https://github.com/sums001/Windows-Copilot-API.git) 改造，但做了几个关键升级：
+
+| 对比项 | 原始项目 | 本项目的改进 |
+|--------|---------|------------|
+| 目标平台 | 个人版 Copilot | M365 企业版 Copilot |
+| 模型能力 | 个人版，较弱 | GPT-5.6-deepthink，更强 |
+| 配额 | 受个人账号限制 | 随 M365 许可证，配额更高 |
+| API 协议 | Chat Completions | Chat Completions + Responses API |
+| 后台刷新 | 无 | 自动 token 刷新 |
+| cc-switch 集成 | 无 | 一键配置 |
+
+## 安装
+
+### 一键安装
+
+```bash
+./install.sh
+```
+
+自动完成：venv → 依赖 → Playwright Chromium → 全局 `copilot` 命令 → cc-switch 配置。
+
+### 手动安装
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 python -m playwright install chromium
-
-python -m m365copilot login      # visible browser; sign in with your M365 account
+python -m m365copilot login
 ```
 
-The persistent Playwright profile lives under `session/profile/`. As long as
-its Entra refresh token is alive, subsequent runs read a fresh Sydney access
-token silently — no re-login until the profile expires (typically weeks).
+## Codex CLI 集成
 
-### One-shot install
+### 通过 cc-switch（推荐）
 
-```bash
-./install.sh
-```
+`install.sh` 会自动注册 "M365 Copilot" 的 Codex provider。打开 cc-switch → Codex → 选择即可。
 
-This creates the venv, installs Python deps, downloads Playwright's Chromium,
-and links the `copilot` CLI command to `~/.local/bin/copilot`. If
-[cc-switch](https://github.com/your-org/cc-switch) is installed, it
-automatically adds a managed M365 Copilot provider.
+### 手动配置
 
-## CLI
-
-```bash
-copilot login              # interactive sign-in
-copilot ask "Hello!"       # one-shot question, streams to stdout
-copilot chat               # REPL that remembers the conversation
-```
-
-## Server endpoints
-
-### OpenAI Chat Completions (`/v1/chat/completions`)
-
-| Method | Path | Notes |
-| --- | --- | --- |
-| `POST` | `/v1/chat/completions` | Supports `stream: true` and `conversation_id` pass-through |
-| `GET`  | `/v1/models`           | Advertises tone-tagged model variants |
-| `GET`  | `/healthz`             | Liveness probe |
-
-### OpenAI Responses API (`/v1/responses`)
-
-Codex CLI v0.144+ requires `wire_api = "responses"`. This server natively
-speaks it — full SSE streaming, typed events, no adapter needed.
-
-```bash
-curl -X POST http://localhost:8000/v1/responses \
-  -H "Content-Type: application/json" \
-  -d '{"input": "Hello!", "model": "m365-copilot"}'
-```
-
-### Model names → Copilot tone
-
-| Model name | Copilot tone | Description |
-| --- | --- | --- |
-| `m365-copilot` | `Gpt_5_6_Reasoning` | Default — Thinker |
-| `m365-copilot-thinker` | `Gpt_5_6_Reasoning` | Explicit Thinker |
-| `m365-copilot-fast` | `Magic` | Non-thinker, faster |
-| `m365-copilot-creative` | `Creative` | Legacy Bing tone |
-| `m365-copilot-precise` | `Precise` | Legacy Bing tone |
-| `m365-copilot-balanced` | `Balanced` | Legacy Bing tone |
-
-### Env vars
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `HOST` | `127.0.0.1` | Listen address |
-| `PORT` | `8000` | Listen port |
-| `RATE_LIMIT_RPM` | `20` | Requests per minute (0 = disabled) |
-| `RATE_LIMIT_BURST` | `5` | Burst capacity |
-| `MODEL_NAME` | `m365-copilot` | Advertised model name |
-
-## Codex CLI integration
-
-### Via cc-switch (recommended)
-
-Run `./install.sh` and it will auto-configure cc-switch. Or manually add a
-provider in the cc-switch UI with:
-
-- `base_url`: `http://localhost:8000/v1`
-- `api_key`: `unused`
-- `wire_api`: `responses`
-
-### Manual config
-
-Append to `~/.codex/config.toml`:
+添加到 `~/.codex/config.toml`：
 
 ```toml
 [profiles.m365]
@@ -159,75 +164,36 @@ wire_api = "responses"
 env_key = "M365_KEY"
 ```
 
-Then in `~/.bash_profile` or `~/.zshrc`:
+## 已知限制
 
-```bash
-export M365_KEY=unused
-alias codex-m365='codex --profile m365'
-```
+- **M365 账号不能并行** — 一个账号同时只能处理一个对话，请求会串行排队
+- **单对话上限 600 条消息** — 从 Copilot 的限流帧获取
+- **日配额看许可证** — 查看 completion 帧里的 `throttling.metering` 字段
+- **条件访问策略** — 如果公司限制了非托管设备登录，Playwright 登录可能失败
 
-## Project layout
+## 常见问题
 
-```
-m365copilot/       # library
-├── auth.py           token cache + expiry checks
-├── browser.py        Playwright sign-in + Sydney-token capture
-├── protocol.py       SignalR framing + invocation payload builders
-├── driver.py         pure WebSocket Chathub driver
-├── silent_refresh.py Entra refresh-token exchange (no browser)
-└── client.py         high-level API (chat/stream, conversation continuation)
+**Q: 需要有 M365 Copilot 许可证吗？**
+A: 是的。需要你的 M365 账号有 Copilot 的访问权限。
 
-server/            # OpenAI-compatible FastAPI bridge
-├── api.py            /v1/chat/completions, /v1/responses, /v1/models, /healthz
-├── prompt.py         OpenAI messages → single Copilot prompt
-├── openai_format.py  Chat Completion shaping
-├── responses_format.py  Responses API shaping
-├── schemas.py        pydantic request models
-├── ratelimit.py      token-bucket limiter
-├── lock.py           shared upstream lock
-├── keepalive.py      background token refresher
-└── config.py         env-driven server configuration
+**Q: 会触发风控吗？**
+A: 项目模拟的是浏览器正常行为，默认限流 20 RPM，不会过度请求。
 
-tools/
-├── capture_m365.py   protocol capture helper (Playwright)
-├── diag_headless.py  diagnose headless token capture issues
-└── inspect_tokens.py inspect MSAL token cache
-```
+**Q: 和 Windows Copilot API 有什么区别？**
+A: 本项目走的是企业版 M365 Copilot（m365.cloud.microsoft），模型更强、配额更高。
 
-## Protocol notes
+**Q: 支持流式输出吗？**
+A: 支持。Chat Completions 和 Responses API 都支持 SSE 流式。
 
-Reverse-engineered from a captured web session — see `captures/chat_frames.md`
-after running `tools/capture_m365.py`. Key facts:
+**Q: 需要管理员权限吗？**
+A: 不需要。只要你能在浏览器里登录 M365 Copilot，就能用。
 
-- Chat lives at `wss://substrate.office.com/m365Copilot/Chathub/{oid}@{tid}`
-- Transport is SignalR JSON hub protocol, records separated by `\x1e`
-- Turn shape: handshake → ping → `type:4` invocation → many `type:1` updates
-  (each carries a growing full-replace `messages[0].text`) → `type:2`
-  completion (has `conversationId`, final `result.message`) → `type:3` ack
-- Auth is a Bearer JWT audienced to `https://substrate.office.com/sydney`.
-  Read from MSAL localStorage under the
-  `https://substrate.office.com/sydney/.default` cache key
-- Token lives ~60–75 min; we refresh at 50 min and honour the JWT `exp` claim
+## 法律声明
 
-If Microsoft changes the wire format, re-capture with
-`python tools/capture_m365.py` and diff `chat_frames.md`.
+本项目是 **非官方工具**，与微软无关。通过协议兼容的方式对接 M365 Copilot Chat 的消费者网页端点。请遵守你所在公司的可接受使用政策（Acceptable Use Policy）。
 
-## Limitations
+详见 [DISCLAIMER](DISCLAIMER.md) 和 [MIT 许可证](LICENSE)。
 
-- One Sydney account can't cleanly serve parallel conversations — the server
-  serialises upstream calls behind an asyncio lock. Throughput is sequential.
-- Copilot's per-conversation cap is 600 user messages (from the throttling
-  frame). Per-day quotas vary by license — see `throttling.metering` on any
-  completion frame for what's left.
-- Conditional-access-locked tenants may reject the Playwright login (unmanaged
-  device, wrong browser). If sign-in fails with a policy prompt, this project
-  can't get past it.
+---
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). This is a personal tool, not a
-commercial product — keep PRs focused and aligned with the project scope.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+**如果觉得有用，点个 ⭐ 吧！** 你的 Star 是对开发者最大的鼓励。
