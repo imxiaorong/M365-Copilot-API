@@ -1,5 +1,7 @@
 # M365-Copilot-API
 
+[中文版](README.zh-CN.md)
+
 Local OpenAI / Responses API-compatible server for **Microsoft 365 Copilot Chat**
 (work/school account). Talks to the consumer web endpoint under
 `m365.cloud.microsoft/chat` — no application registration, no admin consent,
