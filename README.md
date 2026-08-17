@@ -7,7 +7,7 @@
 
 ## 故事
 
-我是 M365 用户（E3/E5），日常用 Copilot Chat 写代码、做分析。GPT-5.6-deepthink 的推理能力很强，但网页版 Copilot 的交互方式限制了它的发挥：
+我是 M365 用户，日常用 Copilot Chat 写代码、做分析。GPT-5.6-deepthink 的推理能力很强，但网页版 Copilot 的交互方式限制了它的发挥：
 
 - 写代码写到一半，想请教 Copilot，得从编辑器切到浏览器、复制粘贴
 - 跑 CI/CD 的时候，想让它帮忙分析一下构建日志，没法直接接入
@@ -37,7 +37,7 @@ python app.py
 ## 场景
 
 **如果你和我一样：**
-- 有 M365 E3/E5 账号，能用 Copilot Chat
+- 有 M365 账号，能用 Copilot Chat
 - 觉得网页版 Copilot 交互不够灵活
 - 想用 Codex CLI、OpenAI SDK 或其他 Agent 工具来调用模型
 - 不想为了一个 API 去申请 Azure 资源、走审批流程
