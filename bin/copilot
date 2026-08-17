@@ -1,0 +1,36 @@
+#!/bin/bash
+# Global entry point for M365 Copilot CLI.
+#
+# Usage:
+#   copilot                    # interactive REPL (multi-turn, remembers convo)
+#   copilot ask "your q..."    # one-shot question
+#   copilot login              # re-run browser sign-in
+#
+# Resolves the project directory from this script's own location, so symlink
+# this file into ~/.local/bin (or anywhere on $PATH) and it just works — no
+# hardcoded paths to edit when you move machines.
+
+set -e
+
+# Resolve the real script path even when invoked through a symlink, then walk
+# one directory up to reach the project root (this script lives in bin/).
+SCRIPT="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+if [[ "$SCRIPT" != /* ]]; then
+  # readlink on macOS returns relative paths — resolve against original dir.
+  SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "$SCRIPT")"
+fi
+PROJ="$(cd "$(dirname "$SCRIPT")/.." && pwd)"
+PY="$PROJ/venv/bin/python"
+
+if [ ! -x "$PY" ]; then
+  echo "copilot: venv Python not found at $PY" >&2
+  echo "copilot: run '$PROJ/install.sh' first" >&2
+  exit 1
+fi
+
+cd "$PROJ"
+
+if [ $# -eq 0 ]; then
+  exec "$PY" -m m365copilot chat
+fi
+exec "$PY" -m m365copilot "$@"

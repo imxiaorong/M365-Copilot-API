@@ -1,0 +1,41 @@
+#!/bin/bash
+# One-click: login → start server
+set -e
+
+SCRIPT="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+if [[ "$SCRIPT" != /* ]]; then
+  SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "$SCRIPT")"
+fi
+PROJ="$(cd "$(dirname "$SCRIPT")/.." && pwd)"
+cd "$PROJ"
+PY="$PROJ/venv/bin/python"
+TOKEN_FILE="$PROJ/session/token.json"
+
+# 1. Check token; re-login if expired
+if [ -f "$TOKEN_FILE" ]; then
+  "$PY" -c "
+import json, time, base64
+d = json.load(open('$TOKEN_FILE'))
+tok = d.get('access_token', '')
+if not tok: exit(1)
+parts = tok.split('.')
+pad = '=' * (-len(parts[1]) % 4)
+payload = json.loads(base64.urlsafe_b64decode(parts[1] + pad))
+exp = payload.get('exp', 0)
+if time.time() >= exp - 60: exit(1)
+" 2>/dev/null && echo "✅ Token valid" || {
+    echo "🔑 Token expired — re-login..."
+    "$PY" -m m365copilot login
+  }
+else
+  echo "🔑 First-time login..."
+  "$PY" -m m365copilot login
+fi
+
+# 2. Start M365 server if not already running
+if ! lsof -i :8000 2>/dev/null | grep -q LISTEN; then
+  echo "🚀 Starting M365 server..."
+  nohup "$PY" app.py > /tmp/m365-server.log 2>&1 &
+  sleep 2
+fi
+echo "✅ M365 server ready (http://127.0.0.1:8000)"

@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Session state — must never leave the machine.
+session/
+captures/
+
+# IDE
+.vscode/
+.idea/
