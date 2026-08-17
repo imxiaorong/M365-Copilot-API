@@ -5,6 +5,14 @@
 
 [English](README.en.md)
 
+> **⚠️ 重要声明**
+>
+> 本项目是 **非官方工具**，与微软无关。通过协议兼容的方式对接 M365 Copilot Chat 的消费者网页端点。
+>
+> 使用前请务必结合你的实际使用场景，仔细阅读[已知限制](#已知限制)和 [DISCLAIMER](DISCLAIMER.md)，评估对你所在组织的信息安全影响。确保你的使用方式符合公司政策，且不涉及敏感数据泄露风险。
+>
+> 详见 [DISCLAIMER](DISCLAIMER.md) 和 [MIT 许可证](LICENSE)。
+
 ## 故事
 
 我是 M365 用户，日常用 Copilot Chat 写代码、做分析。GPT-5.6-deepthink 的推理能力很强，但网页版 Copilot 的交互方式限制了它的发挥：
@@ -184,8 +192,3 @@ A: 支持。Chat Completions 和 Responses API 都支持 SSE 流式。
 **Q: 需要管理员权限吗？**
 A: 不需要。只要你能在浏览器里登录 M365 Copilot，就能用。
 
-## 法律声明
-
-本项目是 **非官方工具**，与微软无关。通过协议兼容的方式对接 M365 Copilot Chat 的消费者网页端点。请遵守你所在公司的可接受使用政策（Acceptable Use Policy）。
-
-详见 [DISCLAIMER](DISCLAIMER.md) 和 [MIT 许可证](LICENSE)。
