@@ -1,24 +1,20 @@
 # M365-Copilot-API
 
-> 公司配了 M365 Copilot，GPT-5.6-deepthink 的推理能力确实强。
-> 但网页聊天的交互方式始终不够趁手——编辑器里写代码、终端里跑任务，还得来回切窗口。
-> 既然模型能力已经在手，为什么不把它接到真正好用的工具上？
-> 于是我造了这个桥。
+> 我有 M365 账号，可以用 Copilot Chat 的 GPT-5.6-deepthink 模型。
+> 但我更希望用 Codex CLI 这类 Agent 产品来充分发挥它的能力——所以有了这个项目。
 
 [English](README.en.md)
 
 ## 故事
 
-作为 M365 用户，我每天都在用 Copilot Chat。GPT-5.6-deepthink 的推理能力很强，帮我解决了不少问题。但用着用着，总有一些场景让我觉得"要是能这样就好了"：
+我是 M365 用户（E3/E5），日常用 Copilot Chat 写代码、做分析。GPT-5.6-deepthink 的推理能力很强，但网页版 Copilot 的交互方式限制了它的发挥：
 
 - 写代码写到一半，想请教 Copilot，得从编辑器切到浏览器、复制粘贴
 - 跑 CI/CD 的时候，想让它帮忙分析一下构建日志，没法直接接入
 - 重复性的数据分析任务，每次都要手动操作，没法自动化
 - 更不用说 Agent 那种"帮我规划、执行、迭代"的体验了
 
-我真正想要的，是**用 Codex CLI 这类 Agent 产品来调用 M365 的模型能力**——直接在编辑器里、在终端里、在流水线里，像用本地工具一样调用它。
-
-但官方没有给 API。
+我真正想要的是：**用 Codex CLI 这类 Agent 产品来调用 M365 的模型能力**。但官方没有给 API，怎么办？
 
 于是有了这个项目——它把 M365 Copilot Chat 背后的 WebSocket 协议转成了标准的 OpenAI API。你在浏览器里能做的事情，现在通过 API 也能做，而且可以用你喜欢的 Agent 工具。
 
@@ -26,10 +22,22 @@
 你的 Agent 工具 → OpenAI SDK → localhost:8000 → M365 Copilot 云端
 ```
 
+## 开箱即用
+
+```bash
+git clone https://github.com/imxiaorong/M365-Copilot-API.git
+cd M365-Copilot-API
+./install.sh
+copilot login
+python app.py
+```
+
+四步完成。`install.sh` 会自动配置 [cc-switch](https://github.com/farion1231/cc-switch) 的 provider，打开 cc-switch → Codex → 选择 "M365 Copilot" 即可使用，无需任何额外配置。
+
 ## 场景
 
 **如果你和我一样：**
-- 公司有 M365 E3/E5 账号，能用 Copilot Chat
+- 有 M365 E3/E5 账号，能用 Copilot Chat
 - 觉得网页版 Copilot 交互不够灵活
 - 想用 Codex CLI、OpenAI SDK 或其他 Agent 工具来调用模型
 - 不想为了一个 API 去申请 Azure 资源、走审批流程
@@ -60,22 +68,6 @@ M365 的 token 有效期 60-75 分钟，项目内置了自动刷新机制，登�
 
 ### 🎯 多 tone 选择
 支持 Thinker、Fast、Creative、Precise、Balanced 等多种 Copilot 模式，按需切换。
-
-## 快速开始
-
-```bash
-git clone https://github.com/imxiaorong/M365-Copilot-API.git
-cd M365-Copilot-API
-./install.sh
-
-# 首次登录（会弹浏览器，用你的 M365 账号登录）
-copilot login
-
-# 启动服务
-python app.py
-```
-
-服务启动后，所有 OpenAI 兼容客户端连 `http://localhost:8000/v1` 即可使用。
 
 ## 模型名对照
 
